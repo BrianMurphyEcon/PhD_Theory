@@ -1,0 +1,252 @@
+close all
+clear 
+clc
+    
+global c lag re rf n T Z
+    
+load data
+    
+lag = 3;                                                                % Number of lags used as instruments. Make sure to change this with Z.
+        
+c  = data(:,1);                                                         % c(t)/c(t-1).
+re = data(:,2);                                                         % Value-weighted average of stock returns.
+rf = data(:,3);                                                         % T-bill rate.
+    
+T = size(data,1);
+Z = [ones(T-lag,1) c(1:T-3)  c(2:T-2) c(3:T-1)...                       % Instruments: 3 lags of consumption, T-bill rate
+    re(1:T-3) re(2:T-2) re(3:T-1)...                      % value-weighted average of stock returns.
+    rf(1:T-3) rf(2:T-2) rf(3:T-1)]; 
+n = size(Z,2);                                                          % Number of instruments including constant.
+    
+clear data
+
+b0 = [0.5 0.5];                                                         % Initial guess of beta and gamma, respectively.
+W  = weight(b0,0);                                                      % 0 = Identity matrix, 1 = Newey-West, 2 = Quadratic Spectral.
+
+opt = optimset('FinDiffType','central','HessUpdate','BFGS');            % Use central difference for derivative and BFGS algorithm.
+b1  = fminunc('gmm_obj',b0,opt,W);   
+clear W
+
+% Newey-West.
+
+W   = weight(b1,1);                                                        
+bNW = fminunc('gmm_obj',b1,opt,W);                                      % GMM Estimation.
+gradNW = Df(bNW);                                                       % Gradient.
+vmatNW = inv(gradNW'*W*gradNW);                                         % Variance matrix. Note: W = inv(omega).
+    
+clear gradNW W Dgp1 Dgp2 Dgm1 Dgm2
+    
+% Quadratic Spectral.
+    
+W   = weight(b1,2);    
+bQS = fminunc('gmm_obj',b1,opt,W);                                      % GMM Estimation.
+
+gradQS = Df(bQS);                                                       % Gradient.    
+vmatQS = inv(gradQS'*W*gradQS);                                         % Variance matrix. Note: W = inv(omega).
+    
+clear gradQS W Dgp1 Dgp2 Dgm1 Dgm2
+
+% Results
+
+clc
+fprintf('Estimation Results (Newey-West Variance Estimator):\n\n')
+    
+fprintf(' \t Coeff. \t SE (NW) \n\n')
+fprintf('beta \t %1.4f \t %1.4f  \n',bNW(1), sqrt(vmatNW(1,1)))
+fprintf('gamma \t %1.4f \t %1.4f \n\n',bNW(2), sqrt(vmatNW(2,2)))
+
+fprintf('Estimation Results (Quadratic Spectral Variance Estimator):\n\n')
+    
+fprintf(' \t Coeff. \t SE (QS) \n\n')
+fprintf('beta \t %1.4f \t %1.4f  \n',bQS(1), sqrt(vmatQS(1,1)))
+fprintf('gamma \t %1.4f \t %1.4f \n\n',bQS(2), sqrt(vmatQS(2,2)))
+
+% Set 1
+
+close all
+clear 
+clc
+    
+global c lag re rf n T Z
+    
+load data
+    
+lag = 1;                                                                % Number of lags used as instruments. Make sure to change this with Z.
+        
+c  = data(:,1);                                                         % c(t)/c(t-1).
+re = data(:,2);                                                         % Value-weighted average of stock returns.
+rf = data(:,3);                                                         % T-bill rate.
+    
+T = size(data,1);
+Z = [ones(T-lag,1) c(1:T-1)  rf(1:T-1)] ;                                % Instruments: 1 lag of consumption and  T-bill rate
+                                         
+                      
+n = size(Z,2);                                                          % Number of instruments including constant.
+    
+clear data
+
+% Optimal Weighting Matrix
+
+b0 = [0.5 0.5];                                                         % Initial guess of beta and gamma, respectively.
+W  = weight(b0,0);                                                      % 0 = Identity matrix, 1 = Newey-West, 2 = Quadratic Spectral.
+
+opt = optimset('FinDiffType','central','HessUpdate','BFGS');            % Use central difference for derivative and BFGS algorithm.
+b1  = fminunc('gmm_obj',b0,opt,W);   
+clear W
+
+% Newey-West.
+
+W   = weight(b1,1);                                                        
+bNW = fminunc('gmm_obj',b1,opt,W);                                      % GMM Estimation.
+gradNW = Df(bNW);                                                       % Gradient.
+vmatNW = inv(gradNW'*W*gradNW);                                         % Variance matrix. Note: W = inv(omega).
+    
+clear gradNW W Dgp1 Dgp2 Dgm1 Dgm2
+    
+% Quadratic Spectral.
+    
+W   = weight(b1,2);    
+bQS = fminunc('gmm_obj',b1,opt,W);                                      % GMM Estimation.
+
+gradQS = Df(bQS);                                                       % Gradient.    
+vmatQS = inv(gradQS'*W*gradQS);                                         % Variance matrix. Note: W = inv(omega).
+    
+clear gradQS W Dgp1 Dgp2 Dgm1 Dgm2
+
+% Set 2
+
+close all
+clear 
+clc
+    
+global c lag re rf n T Z
+    
+load data
+    
+lag = 5;                                                                % Number of lags used as instruments. Make sure to change this with Z.
+        
+c  = data(:,1);                                                         % c(t)/c(t-1).
+re = data(:,2);                                                         % Value-weighted average of stock returns.
+rf = data(:,3);                                                         % T-bill rate.
+    
+T = size(data,1);
+Z = [ones(T-lag,1) c(1:T-5)  c(2:T-4) c(3:T-3)  c(4:T-2) c(5:T-1)...                       % Instruments: 3 lags of consumption, T-bill rate
+    re(1:T-5) re(2:T-4) re(3:T-3) re(4:T-2) re(5:T-1)...                      % value-weighted average of stock returns.
+    rf(1:T-5) rf(2:T-4) rf(3:T-3) rf(4:T-2) rf(5:T-1)];                                      
+                      
+n = size(Z,2);                                                          % Number of instruments including constant.
+    
+clear data
+
+b0 = [0.5 0.5];                                                         % Initial guess of beta and gamma, respectively.
+W  = weight(b0,0);                                                      % 0 = Identity matrix, 1 = Newey-West, 2 = Quadratic Spectral.
+
+opt = optimset('FinDiffType','central','HessUpdate','BFGS');            % Use central difference for derivative and BFGS algorithm.
+b1  = fminunc('gmm_obj',b0,opt,W);   
+clear W
+
+% Newey-West.
+
+W   = weight(b1,1);                                                        
+bNW = fminunc('gmm_obj',b1,opt,W);                                      % GMM Estimation.
+gradNW = Df(bNW);                                                       % Gradient.
+vmatNW = inv(gradNW'*W*gradNW);                                         % Variance matrix. Note: W = inv(omega).
+    
+clear gradNW W Dgp1 Dgp2 Dgm1 Dgm2
+    
+% Quadratic Spectral.
+    
+W   = weight(b1,2);    
+bQS = fminunc('gmm_obj',b1,opt,W);                                      % GMM Estimation.
+
+gradQS = Df(bQS);                                                       % Gradient.    
+vmatQS = inv(gradQS'*W*gradQS);                                         % Variance matrix. Note: W = inv(omega).
+    
+clear gradQS W Dgp1 Dgp2 Dgm1 Dgm2
+
+clc
+fprintf('Estimation Results (Newey-West Variance Estimator):\n\n')
+    
+        fprintf(' \t Coeff. \t SE (NW) \n\n')
+        fprintf('beta \t %1.4f \t %1.4f  \n',bNW(1), sqrt(vmatNW(1,1)))
+        fprintf('gamma \t %1.4f \t %1.4f \n\n',bNW(2), sqrt(vmatNW(2,2)))
+
+fprintf('Estimation Results (Quadratic Spectral Variance Estimator):\n\n')
+    
+        fprintf(' \t Coeff. \t SE (QS) \n\n')
+        fprintf('beta \t %1.4f \t %1.4f  \n',bQS(1), sqrt(vmatQS(1,1)))
+        fprintf('gamma \t %1.4f \t %1.4f \n\n',bQS(2), sqrt(vmatQS(2,2)))
+
+% Set 3 Lags
+
+close all
+clear 
+clc
+    
+global c lag re rf n T Z
+    
+load data
+    
+lag = 3;                                                                % Number of lags used as instruments. Make sure to change this with Z.
+        
+c  = data(:,1);                                                         % c(t)/c(t-1).
+re = data(:,2);                                                         % Value-weighted average of stock returns.
+rf = data(:,3);                                                         % T-bill rate.
+    
+T = size(data,1);
+Z = [ones(T-lag,1) c(1:T-3)  re(1:T-3)  rf(1:T-3) ];                      % Instruments: 3 lags of consumption, T-bill rate
+                                                                             % value-weighted average of stock returns.                                                         
+                      
+n = size(Z,2);                                                          % Number of instruments including constant.
+    
+clear data
+
+b0 = [0.5 0.5];                                                         % Initial guess of beta and gamma, respectively.
+W  = weight(b0,0);                                                      % 0 = Identity matrix, 1 = Newey-West, 2 = Quadratic Spectral.
+
+opt = optimset('FinDiffType','central','HessUpdate','BFGS');            % Use central difference for derivative and BFGS algorithm.
+b1  = fminunc('gmm_obj',b0,opt,W);   
+clear W
+
+% Newey-West.
+
+W   = weight(b1,1);                                                        
+    bNW = fminunc('gmm_obj',b1,opt,W);                                      % GMM Estimation.
+    gradNW = Df(bNW);                                                       % Gradient.
+    vmatNW = inv(gradNW'*W*gradNW);                                         % Variance matrix. Note: W = inv(omega).
+    
+    clear gradNW W Dgp1 Dgp2 Dgm1 Dgm2
+    
+    % Quadratic Spectral.
+    
+    W   = weight(b1,2);    
+    bQS = fminunc('gmm_obj',b1,opt,W);                                      % GMM Estimation.
+
+    gradQS = Df(bQS);                                                       % Gradient.    
+    vmatQS = inv(gradQS'*W*gradQS);                                         % Variance matrix. Note: W = inv(omega).
+    
+    clear gradQS W Dgp1 Dgp2 Dgm1 Dgm2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
